@@ -233,7 +233,7 @@ const lv_img_dsc_t mountain = {
 #define LV_ATTRIBUTE_IMG_PIXEL_ART_SMALL_RESIZED
 #endif
 
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_PIXEL_ART_SMALL_RESIZED uint8_t pixel_art_small_resized_map[] = {
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_PIXEL_ART_SMALL_RESIZED uint8_t iron_man_mask_map[] = {
 #if CONFIG_NICE_VIEW_WIDGET_INVERTED
         0xff, 0xff, 0xff, 0xff, /*Color of index 0*/
         0x00, 0x00, 0x00, 0xff, /*Color of index 1*/
@@ -312,12 +312,12 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_PIXEL_ART
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xf0, 
 };
 
-const lv_img_dsc_t pixel_art_small_resized = {
+const lv_img_dsc_t iron_man_mask = {
   .header.cf = LV_IMG_CF_ALPHA_1BIT,
   .header.always_zero = 0,
   .header.reserved = 0,
   .header.w = 140,
   .header.h = 68,
   .data_size = 1224,
-  .data = pixel_art_small_resized_map,
+  .data = iron_man_mask_map,
 };
