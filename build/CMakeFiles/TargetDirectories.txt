@@ -1,0 +1,2 @@
+/Users/khaledhossam/Desktop/Dev/custom-niceview-shield/build/CMakeFiles/edit_cache.dir
+/Users/khaledhossam/Desktop/Dev/custom-niceview-shield/build/CMakeFiles/rebuild_cache.dir
