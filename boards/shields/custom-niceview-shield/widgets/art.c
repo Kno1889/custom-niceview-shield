@@ -2540,7 +2540,7 @@ const lv_img_dsc_t mountain = {
 #define LV_ATTRIBUTE_IMG_PIXEL_ART_SMALL_RESIZED
 #endif
 
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_PIXEL_ART_SMALL_RESIZED uint8_t autobot[] = {
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_PIXEL_ART_SMALL_RESIZED uint8_t autobot_map[] = {
 #if CONFIG_NICE_VIEW_WIDGET_INVERTED
     0xff,
     0xff,
@@ -3182,5 +3182,5 @@ const lv_img_dsc_t autobot = {
     .header.w = 140,
     .header.h = 68,
     .data_size = 1224,
-    .data = autobot,
+    .data = autobot_map,
 };
