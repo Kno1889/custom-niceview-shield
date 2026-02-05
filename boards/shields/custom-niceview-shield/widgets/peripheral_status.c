@@ -36,9 +36,9 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     lv_obj_t *canvas = lv_obj_get_child(widget, 1);  // Canvas is now child 1 (art is child 0)
 
     lv_draw_label_dsc_t label_left_dsc;
-    init_label_dsc(&label_left_dsc, LVGL_FOREGROUND, &lv_font_montserrat_14, LV_TEXT_ALIGN_LEFT);
+    init_label_dsc(&label_left_dsc, LVGL_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_LEFT);
     lv_draw_label_dsc_t label_right_dsc;
-    init_label_dsc(&label_right_dsc, LVGL_FOREGROUND, &lv_font_montserrat_14, LV_TEXT_ALIGN_RIGHT);
+    init_label_dsc(&label_right_dsc, LVGL_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_RIGHT);
     lv_draw_rect_dsc_t rect_black_dsc;
     init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
     lv_draw_rect_dsc_t rect_white_dsc;
@@ -53,7 +53,7 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     lv_canvas_draw_rect(canvas, 43, 0, 24, 15, &rect_white_dsc);
     // Draw BT symbol (inverted since on white background)
     lv_draw_label_dsc_t label_bt_dsc;
-    init_label_dsc(&label_bt_dsc, LVGL_BACKGROUND, &lv_font_montserrat_14, LV_TEXT_ALIGN_CENTER);
+    init_label_dsc(&label_bt_dsc, LVGL_BACKGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_CENTER);
     lv_canvas_draw_text(canvas, 43, 0, 24, &label_bt_dsc,
                         state->connected ? LV_SYMBOL_BLUETOOTH : LV_SYMBOL_CLOSE);
 
