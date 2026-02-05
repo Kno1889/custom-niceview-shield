@@ -22,9 +22,12 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/ble.h>
 
 #include "peripheral_status.h"
+#include "../assets/custom_fonts.h"
 
 LV_IMG_DECLARE(autobot);
 LV_IMG_DECLARE(bolt);
+LV_IMG_DECLARE(bt);
+LV_IMG_DECLARE(bt_no_signal);
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
@@ -32,13 +35,25 @@ struct peripheral_status_state {
     bool connected;
 };
 
+static void draw_ble_connected(lv_obj_t *canvas) {
+    lv_draw_img_dsc_t img_dsc;
+    lv_draw_img_dsc_init(&img_dsc);
+    lv_canvas_draw_img(canvas, 49, 0, &bt, &img_dsc);
+}
+
+static void draw_ble_disconnected(lv_obj_t *canvas) {
+    lv_draw_img_dsc_t img_dsc;
+    lv_draw_img_dsc_init(&img_dsc);
+    lv_canvas_draw_img(canvas, 49, 0, &bt_no_signal, &img_dsc);
+}
+
 static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
     lv_obj_t *canvas = lv_obj_get_child(widget, 1);  // Canvas is now child 1 (art is child 0)
 
     lv_draw_label_dsc_t label_left_dsc;
-    init_label_dsc(&label_left_dsc, LVGL_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_LEFT);
+    init_label_dsc(&label_left_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_LEFT);
     lv_draw_label_dsc_t label_right_dsc;
-    init_label_dsc(&label_right_dsc, LVGL_FOREGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_RIGHT);
+    init_label_dsc(&label_right_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_RIGHT);
     lv_draw_rect_dsc_t rect_black_dsc;
     init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
     lv_draw_rect_dsc_t rect_white_dsc;
@@ -51,25 +66,26 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     lv_canvas_draw_text(canvas, 0, 1, 25, &label_left_dsc, "SIG");
     // Draw white background box for BT icon
     lv_canvas_draw_rect(canvas, 43, 0, 24, 15, &rect_white_dsc);
-    // Draw BT symbol (inverted since on white background)
-    lv_draw_label_dsc_t label_bt_dsc;
-    init_label_dsc(&label_bt_dsc, LVGL_BACKGROUND, &lv_font_montserrat_16, LV_TEXT_ALIGN_CENTER);
-    lv_canvas_draw_text(canvas, 43, 0, 24, &label_bt_dsc,
-                        state->connected ? LV_SYMBOL_BLUETOOTH : LV_SYMBOL_CLOSE);
+    // Draw BT icon (inverted since on white background)
+    if (state->connected) {
+        draw_ble_connected(canvas);
+    } else {
+        draw_ble_disconnected(canvas);
+    }
 
     // Draw BAT (battery) row - nice-view-gem style
     lv_canvas_draw_text(canvas, 0, 19, 25, &label_left_dsc, "BAT");
 
     // Draw battery percentage
-    char bat_text[8] = {};
+    char bat_text[10] = {};
     snprintf(bat_text, sizeof(bat_text), "%i%%", state->battery);
 
     if (state->charging) {
         // When charging: percentage + bolt icon
-        lv_canvas_draw_text(canvas, 26, 19, 32, &label_right_dsc, bat_text);
+        lv_canvas_draw_text(canvas, 26, 19, 35, &label_right_dsc, bat_text);
         lv_draw_img_dsc_t img_dsc;
         lv_draw_img_dsc_init(&img_dsc);
-        lv_canvas_draw_img(canvas, 58, 18, &bolt, &img_dsc);
+        lv_canvas_draw_img(canvas, 62, 21, &bolt, &img_dsc);
     } else {
         // Not charging: just percentage
         lv_canvas_draw_text(canvas, 26, 19, 42, &label_right_dsc, bat_text);
