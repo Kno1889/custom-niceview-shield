@@ -4,6 +4,8 @@ if(CONFIG_ZMK_DISPLAY AND CONFIG_NICE_VIEW_WIDGET_STATUS)
   zephyr_library_sources(assets/pixel_operator_mono.c)
   zephyr_library_sources(assets/images.c)
   zephyr_library_sources(widgets/util.c)
+  zephyr_library_sources(widgets/battery.c)
+  zephyr_library_sources(widgets/output.c)
 
   if(NOT CONFIG_ZMK_SPLIT OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     zephyr_library_sources(widgets/status.c)

@@ -6,94 +6,47 @@
  */
 
 #include <zephyr/kernel.h>
-#include <zephyr/random/random.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-#include <zmk/battery.h>
-#include <zmk/display.h>
-#include <zmk/events/usb_conn_state_changed.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/battery_state_changed.h>
+#include <zmk/events/usb_conn_state_changed.h>
 #include <zmk/split/bluetooth/peripheral.h>
 #include <zmk/events/split_peripheral_status_changed.h>
-#include <zmk/usb.h>
+#include <zmk/battery.h>
 #include <zmk/ble.h>
+#include <zmk/display.h>
+#include <zmk/usb.h>
 
+#include "battery.h"
+#include "output.h"
 #include "peripheral_status.h"
-#include "../assets/custom_fonts.h"
 
 LV_IMG_DECLARE(autobot);
-LV_IMG_DECLARE(bolt);
-LV_IMG_DECLARE(bt);
-LV_IMG_DECLARE(bt_no_signal);
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
-struct peripheral_status_state {
-    bool connected;
-};
+/**
+ * Draw buffers
+ **/
 
-static void draw_ble_connected(lv_obj_t *canvas) {
-    lv_draw_img_dsc_t img_dsc;
-    lv_draw_img_dsc_init(&img_dsc);
-    lv_canvas_draw_img(canvas, 49, 0, &bt, &img_dsc);
+static void draw_top(lv_obj_t *widget, const struct status_state *state) {
+    lv_obj_t *canvas = lv_obj_get_child(widget, 1);  // Canvas is child 1 (art is child 0)
+    fill_background(canvas);
+
+    // Draw widgets
+    draw_output_status(canvas, state);
+    draw_battery_status(canvas, state);
+
+    // Rotate for horizontal display
+    rotate_canvas(canvas);
 }
 
-static void draw_ble_disconnected(lv_obj_t *canvas) {
-    lv_draw_img_dsc_t img_dsc;
-    lv_draw_img_dsc_init(&img_dsc);
-    lv_canvas_draw_img(canvas, 49, 0, &bt_no_signal, &img_dsc);
-}
-
-static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
-    lv_obj_t *canvas = lv_obj_get_child(widget, 1);  // Canvas is now child 1 (art is child 0)
-
-    lv_draw_label_dsc_t label_left_dsc;
-    init_label_dsc(&label_left_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_LEFT);
-    lv_draw_label_dsc_t label_right_dsc;
-    init_label_dsc(&label_right_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_RIGHT);
-    lv_draw_rect_dsc_t rect_black_dsc;
-    init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
-    lv_draw_rect_dsc_t rect_white_dsc;
-    init_rect_dsc(&rect_white_dsc, LVGL_FOREGROUND);
-
-    // Fill background
-    lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_black_dsc);
-
-    // Draw SIG (signal/connectivity) row - nice-view-gem style
-    lv_canvas_draw_text(canvas, 0, 1, 25, &label_left_dsc, "SIG");
-    // Draw white background box for BT icon
-    lv_canvas_draw_rect(canvas, 43, 0, 24, 15, &rect_white_dsc);
-    // Draw BT icon (inverted since on white background)
-    if (state->connected) {
-        draw_ble_connected(canvas);
-    } else {
-        draw_ble_disconnected(canvas);
-    }
-
-    // Draw BAT (battery) row - nice-view-gem style
-    lv_canvas_draw_text(canvas, 0, 19, 25, &label_left_dsc, "BAT");
-
-    // Draw battery percentage
-    char bat_text[10] = {};
-    snprintf(bat_text, sizeof(bat_text), "%i%%", state->battery);
-
-    if (state->charging) {
-        // When charging: percentage + bolt icon
-        lv_canvas_draw_text(canvas, 26, 19, 35, &label_right_dsc, bat_text);
-        lv_draw_img_dsc_t img_dsc;
-        lv_draw_img_dsc_init(&img_dsc);
-        lv_canvas_draw_img(canvas, 62, 21, &bolt, &img_dsc);
-    } else {
-        // Not charging: just percentage
-        lv_canvas_draw_text(canvas, 26, 19, 42, &label_right_dsc, bat_text);
-    }
-
-    // Rotate canvas
-    rotate_canvas(canvas, cbuf);
-}
+/**
+ * Battery status
+ **/
 
 static void set_battery_status(struct zmk_widget_status *widget,
                                struct battery_status_state state) {
@@ -103,7 +56,7 @@ static void set_battery_status(struct zmk_widget_status *widget,
 
     widget->state.battery = state.level;
 
-    draw_top(widget->obj, widget->cbuf, &widget->state);
+    draw_top(widget->obj, &widget->state);
 }
 
 static void battery_status_update_cb(struct battery_status_state state) {
@@ -112,8 +65,10 @@ static void battery_status_update_cb(struct battery_status_state state) {
 }
 
 static struct battery_status_state battery_status_get_state(const zmk_event_t *eh) {
-    return (struct battery_status_state) {
-        .level = zmk_battery_state_of_charge(),
+    const struct zmk_battery_state_changed *ev = as_zmk_battery_state_changed(eh);
+
+    return (struct battery_status_state){
+        .level = (ev != NULL) ? ev->state_of_charge : zmk_battery_state_of_charge(),
 #if IS_ENABLED(CONFIG_USB_DEVICE_STACK)
         .usb_present = zmk_usb_is_powered(),
 #endif /* IS_ENABLED(CONFIG_USB_DEVICE_STACK) */
@@ -121,12 +76,16 @@ static struct battery_status_state battery_status_get_state(const zmk_event_t *e
 }
 
 ZMK_DISPLAY_WIDGET_LISTENER(widget_battery_status, struct battery_status_state,
-                            battery_status_update_cb, battery_status_get_state)
+                            battery_status_update_cb, battery_status_get_state);
 
 ZMK_SUBSCRIPTION(widget_battery_status, zmk_battery_state_changed);
 #if IS_ENABLED(CONFIG_USB_DEVICE_STACK)
 ZMK_SUBSCRIPTION(widget_battery_status, zmk_usb_conn_state_changed);
 #endif /* IS_ENABLED(CONFIG_USB_DEVICE_STACK) */
+
+/**
+ * Peripheral status
+ **/
 
 static struct peripheral_status_state get_state(const zmk_event_t *_eh) {
     return (struct peripheral_status_state){.connected = zmk_split_bt_peripheral_is_connected()};
@@ -136,7 +95,7 @@ static void set_connection_status(struct zmk_widget_status *widget,
                                   struct peripheral_status_state state) {
     widget->state.connected = state.connected;
 
-    draw_top(widget->obj, widget->cbuf, &widget->state);
+    draw_top(widget->obj, &widget->state);
 }
 
 static void output_status_update_cb(struct peripheral_status_state state) {
@@ -148,9 +107,15 @@ ZMK_DISPLAY_WIDGET_LISTENER(widget_peripheral_status, struct peripheral_status_s
                             output_status_update_cb, get_state)
 ZMK_SUBSCRIPTION(widget_peripheral_status, zmk_split_peripheral_status_changed);
 
+/**
+ * Initialization
+ **/
+
 int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     widget->obj = lv_obj_create(parent);
-    lv_obj_set_size(widget->obj, 160, 68);
+    lv_obj_set_size(widget->obj, SCREEN_HEIGHT, SCREEN_WIDTH);
+    lv_obj_set_style_bg_color(widget->obj, LVGL_BACKGROUND, LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(widget->obj, LV_OPA_COVER, LV_PART_MAIN);
 
     // Create art first (so it's rendered behind the canvas)
     lv_obj_t *art = lv_img_create(widget->obj);
@@ -160,7 +125,7 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     // Create canvas after art (so widgets render on top)
     lv_obj_t *top = lv_canvas_create(widget->obj);
     lv_obj_align(top, LV_ALIGN_TOP_RIGHT, 0, 0);
-    lv_canvas_set_buffer(top, widget->cbuf, CANVAS_SIZE, CANVAS_SIZE, LV_IMG_CF_TRUE_COLOR);
+    lv_canvas_set_buffer(top, widget->cbuf, CANVAS_SIZE, CANVAS_SIZE, CANVAS_COLOR_FORMAT);
 
     sys_slist_append(&widgets, &widget->node);
     widget_battery_status_init();
